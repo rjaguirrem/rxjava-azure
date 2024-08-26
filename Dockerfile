@@ -1,34 +1,32 @@
-# Usa una imagen base de OpenJDK
-FROM openjdk:17-jdk-slim AS build
+# Usa una imagen base de Maven para construir el proyecto
+FROM maven:3.8.1-openjdk-17 AS build
 
-# Establece el directorio de trabajo
+# Establece el directorio de trabajo en /app
 WORKDIR /app
 
-# Copia los archivos de Maven Wrapper y el archivo pom.xml
-COPY mvnw .
-COPY .mvn .mvn
+# Copia el archivo pom.xml y descarga las dependencias necesarias
 COPY pom.xml .
 
-# Da permisos de ejecución al script mvnw
-RUN chmod +x mvnw
+# Descarga las dependencias de Maven (esto se almacenará en caché si pom.xml no cambia)
+RUN mvn dependency:go-offline -B
 
-# Descarga las dependencias usando el Maven Wrapper
-RUN ./mvnw dependency:go-offline
-
-# Copia el código fuente
+# Copia el código fuente de la aplicación
 COPY src ./src
 
-# Construye el JAR usando el Maven Wrapper
-RUN ./mvnw package -DskipTests
+# Construye la aplicación y genera un archivo JAR
+RUN mvn clean package -DskipTests
 
-# Usa una imagen base de OpenJDK para la etapa de ejecución
+# Usa una imagen base ligera de Java para ejecutar la aplicación
 FROM openjdk:17-jdk-slim
 
-# Copia el JAR construido desde la etapa anterior
-COPY --from=build /app/target/rxjava-azure-0.0.1.jar /app/rxjava-azure-0.0.1.jar
+# Establece el directorio de trabajo en /app
+WORKDIR /app
 
-# Exponer el puerto 8091 para el contenedor
-#EXPOSE 8091
+# Copia el archivo JAR generado desde la fase de construcción
+COPY --from=build /app/target/rxjava-azure-0.0.1.jar ./rxjava-azure-0.0.1.jar
 
-# Establece el comando por defecto
-ENTRYPOINT ["java", "-jar", "/app/rxjava-azure-0.0.1.jar"]
+# Expone el puerto 8080
+EXPOSE 8080
+
+# Define el comando para ejecutar la aplicación
+ENTRYPOINT ["java", "-jar", "rxjava-azure-0.0.1.jar"]

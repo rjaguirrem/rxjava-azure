@@ -11,7 +11,7 @@ public class BossController {
     @GetMapping("/boss")
     public Maybe<ResponseEntity<Boss>> getCustomer() {
         return Maybe.just(
-            Boss.builder().id(1L).name("Juan").build())
+            Boss.builder().id(1L).name("Raúl xD").build())
             .map(ResponseEntity::ok);
     }
 }
